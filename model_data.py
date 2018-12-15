@@ -2,6 +2,7 @@
 # Load
 
 import pandas as pd
+from scipy import stats
 
 MOST_RECENT_FILE = "db_121218_1240pm.csv"
 
@@ -68,6 +69,10 @@ def analytics(df):
 
 	print(set(nonbinary_table['name'].values))
 
+	# To get the modes of the individual scenarios
+	grouped_df = df.groupby(['urinal0', 'urinal1', 'urinal2', 'urinal3', 'urinal4', 'urinal5', 'urinal6', 'age', 'gender', 'height'])
+	grouped_df = grouped_df.agg({'index': lambda x: tuple(stats.mode(x)[0])})
+	print("There are " + str(len(list(grouped_df.columns.values))) + " separate urinal scenarios")
 
 
 

@@ -1,12 +1,14 @@
-
-
 from model_data import *
+from basicAnalysis import *
+
 import pandas as pd
 
 import numpy as np
 from keras import models
 from keras import layers
 from keras import optimizers
+from scipy import stats
+
 
 def to_one_hot(urinal):
 	"""
@@ -28,15 +30,10 @@ def vectorize(row):
 
 	input:
 		An encoding of the stalls:
-			For each of the 7 stalls, a one-hot encoding of the stall value
-			(49 total inputs)
-
-		An encoding of gender: 'M', 'F' or 'UNK'
-			One-hot (3 total inputs)
-
-		Age: Simple (1 total input)
-
-		Height: Simple (1 total input)
+			For each of the 7 stalls, a one-hot encoding of the stall value -- 7x one-hot (49 total inputs)
+		An encoding of gender: 'M', 'F' or 'UNK'							-- One-hot (3 total inputs)
+		Age: Float 															-- (1 total input)
+		Height: Float 														-- (1 total input)
 
 	label:
 		A one-hot encoding of the place the user chose
@@ -74,7 +71,6 @@ def vectorize(row):
 
 	return input_vec, empty_vec, output_vec
 
-
 def build_model(input_size, output_size=7):
 	"""
 	Builds a neural network model to handle the data
@@ -107,6 +103,11 @@ def get_dataset(train_val_test_split=(0.6,0.2,0.2)):
 
 	all_data = [[], [], []]
 
+	grouped_df = df.groupby(['urinal0', 'urinal1', 'urinal2', 'urinal3', 'urinal4', 'urinal5', 'urinal6', 'age', 'gender', 'height'], as_index=False)
+	grouped_df = grouped_df.agg({'index': lambda x: tuple(stats.mode(x)[0])[0]})
+	
+	df = grouped_df
+
 	for index, row in df.iterrows():
 		input_vec, empty_vec, output_vec = vectorize(row)
 		all_data[0].append(input_vec)
@@ -131,20 +132,26 @@ def fit_model(model, train_data):
 	return model
 
 def get_accuracy(model, dataset):
-	Yhat = model.predict(X={"main_input":dataset[0], "empty_input": dataset[1]})
+	Yhat = model.predict({"main_input":dataset[0], "empty_input": dataset[1]})
 
-	accuracy = (np.argmax(Yhat, axis=0) == np.argmax(dataset[2], axis=0)).mean()
-	print(accuracy)
+	accuracy = (np.argmax(Yhat, axis=1) == np.argmax(dataset[2], axis=1)).mean()
+	return accuracy
 
-INPUT_SIZE = 54
-OUTPUT_SIZE = 7
-
-train_data, val_data, test_data = get_dataset()
-model = make_model(input_size=INPUT_SIZE, output_size=OUTPUT_SIZE)
-model = fit_model(train_data)
+if __name__ == "__main__":
+	INPUT_SIZE = 54
+	OUTPUT_SIZE = 7
 
 
-get_accuracy()
+	df = pd.read_csv(MOST_RECENT_FILE)
+	df = assign_genders(df)
+
+	train_data, val_data, test_data = get_dataset()
+	model = make_model(input_size=INPUT_SIZE, output_size=OUTPUT_SIZE)
+	model = fit_model(model, train_data)
 
 
+	val_acc = get_accuracy(model, val_data)
+	test_acc = get_accuracy(model, test_data)
 
+	print(val_acc)
+	print(test_acc)
