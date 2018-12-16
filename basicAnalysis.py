@@ -14,7 +14,10 @@ def getDistributions(dataFrame):
 	return ages,heights
 
 def getResponseByUrinalSetup(dataFrame):
-	urinals = dataFrame.groupby(['urinal0', 'urinal1', 'urinal2', 'urinal3',	'urinal4', 'urinal5', 'urinal6'])['index']
+	urinals = dataFrame.groupby(['urinal0', 'urinal1', 'urinal2', 'urinal3', 'urinal4', 'urinal5', 'urinal6'])['index']
 
 	print(urinals.describe())
-main()
+	return urinals
+
+if __name__ == "__main__":
+	main()
