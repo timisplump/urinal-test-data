@@ -8,7 +8,8 @@ from keras import models
 from keras import layers
 from keras import optimizers
 from scipy import stats
-
+from keras.callbacks import Callback
+import matplotlib.pyplot as plt
 
 def to_one_hot(urinal):
 	"""
@@ -43,7 +44,6 @@ def vectorize(row):
 	"""
 
 	input_vec = np.zeros(49+3+1+1)
-
 	urinals = [row['urinal' + str(i)] for i in range(7)]
 
 	for index, urinal in enumerate(urinals):
@@ -84,29 +84,23 @@ def build_model(input_size, output_size=7):
 	out1 = layers.Dense(int(output_size), activation='softmax')(x3)
 
 	out = layers.Multiply(name="output")([out1, empty_input])
-
 	model = models.Model(inputs=[input1, empty_input], outputs=out)
 
 	return model
 
 def make_model(input_size, output_size=7):
 	model = build_model(input_size, output_size=output_size)
-	model.compile(optimizer=optimizers.Adam(lr=0.0005),
+	model.compile(optimizer=optimizers.Adam(lr=0.001),
 			  loss='categorical_crossentropy', #'mse', #
 			  metrics=['categorical_accuracy'])
 
 	return model
 
-def get_dataset(train_val_test_split=(0.6,0.2,0.2)):
+def get_dataset(train_test_split=(0.8,0.2)):
 	df = pd.read_csv(MOST_RECENT_FILE)
 	df = assign_genders(df)
 
 	all_data = [[], [], []]
-
-	grouped_df = df.groupby(['urinal0', 'urinal1', 'urinal2', 'urinal3', 'urinal4', 'urinal5', 'urinal6', 'age', 'gender', 'height'], as_index=False)
-	grouped_df = grouped_df.agg({'index': lambda x: tuple(stats.mode(x)[0])[0]})
-	
-	df = grouped_df
 
 	for index, row in df.iterrows():
 		input_vec, empty_vec, output_vec = vectorize(row)
@@ -114,26 +108,21 @@ def get_dataset(train_val_test_split=(0.6,0.2,0.2)):
 		all_data[1].append(empty_vec)
 		all_data[2].append(output_vec)
 
-	train_index_max = int(len(all_data[0]) * train_val_test_split[0])
-	test_index_min = int(len(all_data[0]) * (train_val_test_split[0] + train_val_test_split[1]))
+	test_index_min = int(len(all_data[0]) * train_test_split[0])
 
-	train_data = [np.array(all_data[i][:train_index_max]) for i in range(3)]
-	val_data = [np.array(all_data[i][train_index_max:test_index_min]) for i in range(3)]
+	train_data = [np.array(all_data[i][:test_index_min]) for i in range(3)]
 	test_data = [np.array(all_data[i][test_index_min:]) for i in range(3)]
 
-	return train_data, val_data, test_data
+	return train_data, test_data
 
 def fit_model(model, train_data):
-	print(train_data[2].shape)
-	print(train_data[2])
-	model.fit({"main_input":train_data[0], "empty_input": train_data[1]}, {"output":train_data[2]},
-		epochs=500, batch_size=32)
+	history = model.fit({"main_input":train_data[0], "empty_input": train_data[1]}, {"output":train_data[2]},
+		epochs=4000, batch_size=32, validation_split=0.25)
 
-	return model
+	return model, history
 
 def get_accuracy(model, dataset):
 	Yhat = model.predict({"main_input":dataset[0], "empty_input": dataset[1]})
-
 	accuracy = (np.argmax(Yhat, axis=1) == np.argmax(dataset[2], axis=1)).mean()
 	return accuracy
 
@@ -145,13 +134,17 @@ if __name__ == "__main__":
 	df = pd.read_csv(MOST_RECENT_FILE)
 	df = assign_genders(df)
 
-	train_data, val_data, test_data = get_dataset()
+	train_data, test_data = get_dataset()
 	model = make_model(input_size=INPUT_SIZE, output_size=OUTPUT_SIZE)
-	model = fit_model(model, train_data)
+	model, history = fit_model(model, train_data)
 
+	plt.plot(history.history['categorical_accuracy'][::10])
+	plt.plot(history.history['val_categorical_accuracy'][::10])
+	plt.title('model accuracy')
+	plt.ylabel('accuracy')
+	plt.xlabel('Epoch')
+	plt.legend(['train', 'validation'], loc='upper left')
+	plt.show()
 
-	val_acc = get_accuracy(model, val_data)
 	test_acc = get_accuracy(model, test_data)
-
-	print(val_acc)
 	print(test_acc)

@@ -51,10 +51,26 @@ def assign_genders(table):
 	table['gender'] = table.apply(map_to_gender, axis=1)
 	return table
 
+def count_empties(table):
+	"""
+	Goes through the names in the table and counts how many
+	empty urinals were in each scenario
+	"""
+	def count_empties(row):
+		empties = 0
+		for i in range(7):
+			if 'empty' in row['urinal' + str(i)]:
+				empties += 1
+		return empties
+
+	table['empties'] = table.apply(count_empties, axis=1)
+	return table
+
 def analytics(df):
 	"""
 	Prints some general analytics about the dataset
 	"""
+	df = count_empties(df)
 
 	guys_table = df[df['gender'] == 'M']
 	girls_table = df[df['gender'] == 'F']
@@ -67,13 +83,22 @@ def analytics(df):
 	print('There are ' + str(len(set(guys_table['name'].values))) + ' separate guy names')
 	print('There are ' + str(len(set(nonbinary_table['name'].values))) + ' separate unknown gender names')
 
-	print(set(nonbinary_table['name'].values))
+	# print(set(nonbinary_table['name'].values))
 
 	# To get the modes of the individual scenarios
 	grouped_df = df.groupby(['urinal0', 'urinal1', 'urinal2', 'urinal3', 'urinal4', 'urinal5', 'urinal6', 'age', 'gender', 'height'])
 	grouped_df = grouped_df.agg({'index': lambda x: tuple(stats.mode(x)[0])})
 	print("There are " + str(len(list(grouped_df.columns.values))) + " separate urinal scenarios")
 
+
+	print("The average number of empty urinals over the scnarios: " + str(df['empties'].mean()))
+	print("The number of scenarios with an empty stall: " + str(len(df[df['urinal6'] == 'stall_empty'])))
+	print("The number of scenarios with an occupied stall: " + str(len(df[df['urinal6'] == 'stall_occupied'])))
+	print("The number of scenarios with no stall: " + str(len(df[df['urinal6'] == 'none'])))
+	
+	print("The number of scenarios with an empty kiddie urinal: " + str(len(df[df['urinal0'] == 'kid_empty'])))
+	print("The number of scenarios with an occupied kiddie urinal: " + str(len(df[df['urinal0'] == 'kid_occupied'])))
+	print("The number of scenarios with no kiddie urinal: " + str(len(df[df['urinal0'] == 'none'])))
 
 
 
