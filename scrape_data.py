@@ -31,4 +31,4 @@ df = pd.DataFrame(data_dict)
 new_df = pd.DataFrame(df['urinals'].values.tolist()).add_prefix('urinal').join(df)
 
 # new_df.to_csv(CSV_NAME)
-# new_df.to_csv('/Users/timplump/Documents/urinal_test_data/db_121218_1240pm.csv')
+new_df.to_csv('/Users/timplump/Documents/urinal_test_data/db_121618_515pm.csv')

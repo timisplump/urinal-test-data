@@ -113,13 +113,31 @@ def get_dataset(train_test_split=(0.8,0.2)):
 	train_data = [np.array(all_data[i][:test_index_min]) for i in range(3)]
 	test_data = [np.array(all_data[i][test_index_min:]) for i in range(3)]
 
-	return train_data, test_data
+	test_rows = range(test_index_min, len(all_data[0]))
+
+	return train_data, test_data, test_rows
 
 def fit_model(model, train_data):
 	history = model.fit({"main_input":train_data[0], "empty_input": train_data[1]}, {"output":train_data[2]},
-		epochs=4000, batch_size=32, validation_split=0.25)
+		epochs=2000, batch_size=32, validation_split=0.25)
 
 	return model, history
+
+def predict_test_data(df, model, test_data, test_rows):
+	Yhat = model.predict({"main_input":test_data[0], "empty_input": test_data[1]})
+	preds = np.argmax(Yhat, axis=1)
+
+	def add_pred_to_row(row):
+		if row['Unnamed: 0'] in test_rows:
+			return preds[row['Unnamed: 0'] - test_rows[0]]
+		else:
+			return -1
+
+	df['neural_predictions'] = df.apply(add_pred_to_row, axis=1)
+	return df
+
+
+
 
 def get_accuracy(model, dataset):
 	Yhat = model.predict({"main_input":dataset[0], "empty_input": dataset[1]})
@@ -134,17 +152,23 @@ if __name__ == "__main__":
 	df = pd.read_csv(MOST_RECENT_FILE)
 	df = assign_genders(df)
 
-	train_data, test_data = get_dataset()
+	train_data, test_data, test_rows = get_dataset()
 	model = make_model(input_size=INPUT_SIZE, output_size=OUTPUT_SIZE)
 	model, history = fit_model(model, train_data)
+	print(list(df.columns.values))
 
-	plt.plot(history.history['categorical_accuracy'][::10])
-	plt.plot(history.history['val_categorical_accuracy'][::10])
-	plt.title('model accuracy')
-	plt.ylabel('accuracy')
-	plt.xlabel('Epoch')
-	plt.legend(['train', 'validation'], loc='upper left')
-	plt.show()
+	# plt.plot(history.history['categorical_accuracy'][::10])
+	# plt.plot(history.history['val_categorical_accuracy'][::10])
+	# plt.title('model accuracy')
+	# plt.ylabel('accuracy')
+	# plt.xlabel('Epoch')
+	# plt.legend(['train', 'validation'], loc='upper left')
+	# plt.show()
 
 	test_acc = get_accuracy(model, test_data)
 	print(test_acc)
+
+	df = predict_test_data(df, model, test_data, test_rows)
+
+	# Write test data to file
+	df.to_csv(MOST_RECENT_FILE)
