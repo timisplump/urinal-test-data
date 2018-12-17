@@ -3,6 +3,7 @@
 
 import pandas as pd
 from scipy import stats
+import numpy as np
 
 MOST_RECENT_FILE = "db_121618_515pm.csv"
 
@@ -90,6 +91,16 @@ def analytics(df):
 	grouped_df = grouped_df.agg({'index': lambda x: tuple(stats.mode(x)[0])[0]})
 	print("There are " + str(len(list(grouped_df.iterrows()))) + " separate (urinal, age, gender, height) scenarios")
 
+	people_df = df.groupby(['name'])['name']
+	people_df = people_df.agg(['count'])
+	
+	pd.options.display.max_rows = 125
+	print(people_df)
+	per_person = people_df['count'].tolist()
+	print("Mean number of responses per person: " + str(np.mean(per_person)))
+	print("Median number of responses per person: " + str(np.median(per_person)))
+	print("Min number of responses by one person: " + str(np.min(per_person)))
+	print("Max number of responses by one person: " + str(np.max(per_person)))
 
 	print("The average number of empty urinals over the scnarios: " + str(df['empties'].mean()))
 	print("The number of scenarios with an empty stall: " + str(len(df[df['urinal6'] == 'stall_empty'])))

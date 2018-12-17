@@ -157,13 +157,13 @@ if __name__ == "__main__":
 	model, history = fit_model(model, train_data)
 	print(list(df.columns.values))
 
-	# plt.plot(history.history['categorical_accuracy'][::10])
-	# plt.plot(history.history['val_categorical_accuracy'][::10])
-	# plt.title('model accuracy')
-	# plt.ylabel('accuracy')
-	# plt.xlabel('Epoch')
-	# plt.legend(['train', 'validation'], loc='upper left')
-	# plt.show()
+	plt.plot(history.history['categorical_accuracy'])
+	plt.plot(history.history['val_categorical_accuracy'])
+	plt.title('model accuracy')
+	plt.ylabel('accuracy')
+	plt.xlabel('Epoch')
+	plt.legend(['train', 'validation'], loc='upper left')
+	plt.show()
 
 	test_acc = get_accuracy(model, test_data)
 	print(test_acc)
@@ -171,4 +171,4 @@ if __name__ == "__main__":
 	df = predict_test_data(df, model, test_data, test_rows)
 
 	# Write test data to file
-	df.to_csv(MOST_RECENT_FILE)
+	# df.to_csv(MOST_RECENT_FILE)
