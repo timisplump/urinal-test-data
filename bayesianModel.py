@@ -3,11 +3,10 @@ import basicAnalysis
 
 from sklearn import datasets
 from sklearn import metrics
-from sklearn.naive_bayes import GaussianNB, MultinomialNB
+from sklearn.naive_bayes import GaussianNB, MultinomialNB, BernoulliNB
 
 
-def bayesianModel(filename):
-    bigData = pd.read_csv(filename)
+def bayesianModel(bigData):
     indices = bigData['index'].values.tolist()
     priors = bigData[['age', 'height']].values.tolist()
     for row in range(len(bigData)):
@@ -26,15 +25,17 @@ def bayesianModel(filename):
     #b = bigData.iloc[a[0]]
 
 
-    model = GaussianNB()
+    model = BernoulliNB()
     model.fit(priors, indices)
+    
     print(priors[:10])
     print(indices[:10])
     predicted = model.predict(priors)
-    print(expected[:10])
+    print(predicted[:10])
     print(metrics.classification_report(indices, predicted))
     i = 0
     for index in range(len(predicted)):
         if priors[index][predicted[index]+2] ==0:
             i+= 1
-bayesianModel
+    
+    return model
